@@ -1,9 +1,18 @@
 import pynetbox, urllib3, networkscan, socket, ipaddress
 from extras.scripts import Script
+from dcim.models import DeviceRole, Platform
+from django.core.exceptions import ObjectDoesNotExist
+from extras.models import Tag
+from ipam.choices import IPAddressStatusChoices
+from ipam.models import IPAddress, VRF, Prefix
+from tenancy.models import Tenant
+from virtualization.choices import VirtualMachineStatusChoices
+from virtualization.models import Cluster, VirtualMachine, VMInterface
+from extras.scripts import Script, StringVar, IPAddressWithMaskVar, ObjectVar, MultiObjectVar, ChoiceVar, IntegerVar, TextVar
 
-TOKEN='xxx'
+TOKEN='720ba09342da456737ebd6982b128939d500fd99'
 
-NETBOXURL='https://your.netbox.address'
+NETBOXURL='http://10.0.11.121/'
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # disable safety warnings
 
@@ -12,6 +21,7 @@ class IpScan(Script):
     class Meta:
         name = "IP Scanner"
         description = "Scans available prefixes and updates ip addresses in IPAM Module"
+    sn = ObjectVar(model=Prefix, required=False)
 
     def run(self, data, commit):
 
@@ -31,7 +41,8 @@ class IpScan(Script):
         nb = pynetbox.api(NETBOXURL, token=TOKEN)
         nb.http_session.verify = False # disable certificate checking
 
-        subnets = nb.ipam.prefixes.all()  # extracts all prefixes, in format x.x.x.x/yy
+        #subnets = nb.ipam.prefixes.all()  # extracts all prefixes, in format x.x.x.x/yy
+        subnets = data["sn"],  # extracts all prefixes, in format x.x.x.x/yy
 
         for subnet in subnets:
             if str(subnet.status) == 'Reserved': # Do not scan reserved subnets
